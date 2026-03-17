@@ -7,6 +7,7 @@ import EventsPage from "./pages/EventsPage";
 import JudgesPage from "./pages/JudgesPage";
 import LiveEvaluationPage from "./pages/LiveEvaluationPage";
 import LoginPage from "./pages/LoginPage";
+import BlocksPage from "./pages/BlocksPage";
 import OrderPage from "./pages/OrderPage";
 import ResultsPage from "./pages/ResultsPage";
 import JuryPage from "./pages/JuryPage";
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/events/:eventId/coreographies" element={<CoreographiesPage />} />
+          <Route path="/events/:eventId/blocks" element={<BlocksPage />} />
           <Route path="/events/:eventId/judges" element={<JudgesPage />} />
           <Route path="/events/:eventId/order" element={<OrderPage />} />
           <Route path="/events/:eventId/live" element={<LiveEvaluationPage />} />

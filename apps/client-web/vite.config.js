@@ -15,7 +15,8 @@ export default defineConfig({
       "socket.io-client": path.resolve(__dirname, "node_modules/socket.io-client"),
       "@dnd-kit/core": path.resolve(__dirname, "node_modules/@dnd-kit/core"),
       "@dnd-kit/sortable": path.resolve(__dirname, "node_modules/@dnd-kit/sortable"),
-      "@dnd-kit/utilities": path.resolve(__dirname, "node_modules/@dnd-kit/utilities")
+      "@dnd-kit/utilities": path.resolve(__dirname, "node_modules/@dnd-kit/utilities"),
+      "xlsx": path.resolve(__dirname, "node_modules/xlsx")
     }
   },
   server: {

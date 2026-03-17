@@ -4,6 +4,7 @@ const Score = require("../models/Score");
 const { getClientFilter } = require("../services/clientFilterService");
 const ScoreLog = require("../models/ScoreLog");
 const {
+  ensureActiveJudgeByToken,
   ensureJudgeChoreographyAccess,
   submitJudgeScore
 } = require("../services/scoreService");
@@ -179,8 +180,26 @@ async function getEventRanking(req, res, next) {
   }
 }
 
+async function getJudgeScoreLogs(req, res, next) {
+  try {
+    const { token, choreographyId } = req.params;
+
+    const judge = await ensureActiveJudgeByToken(token);
+
+    const logs = await ScoreLog.find({
+      judgeId: judge._id,
+      choreographyId
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({ logs });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createJudgeScore,
   getEventRanking,
+  getJudgeScoreLogs,
   listChoreographyScores
 };

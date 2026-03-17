@@ -1,14 +1,11 @@
 const { verifyToken } = require("../services/jwtService");
+const logger = require("../services/logger");
 
 function authMiddleware(req, res, next) {
   const authorizationHeader = req.headers.authorization;
 
   if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-    console.warn("[AUTH] Missing or invalid Authorization header", {
-      path: req.originalUrl,
-      method: req.method,
-      authorizationHeader: authorizationHeader ? "present" : "missing"
-    });
+    logger.warn(`[AUTH] Missing token - ${req.method} ${req.originalUrl}`);
     return res.status(401).json({
       message: "Authorization token not provided"
     });
@@ -18,18 +15,9 @@ function authMiddleware(req, res, next) {
 
   try {
     req.user = verifyToken(token);
-    console.info("[AUTH] Token verified", {
-      path: req.originalUrl,
-      method: req.method,
-      user: req.user
-    });
     next();
   } catch (error) {
-    console.warn("[AUTH] Invalid or expired token", {
-      path: req.originalUrl,
-      method: req.method,
-      error: error.message
-    });
+    logger.warn(`[AUTH] Invalid token - ${req.method} ${req.originalUrl}`);
     return res.status(401).json({
       message: "Invalid or expired token"
     });

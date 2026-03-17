@@ -61,6 +61,15 @@ const choreographySchema = new mongoose.Schema(
     presentedAt: {
       type: Date,
       default: null
+    },
+    desistencia: {
+      type: Boolean,
+      default: false
+    },
+    blockId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Block",
+      default: null
     }
   },
   {

@@ -57,6 +57,12 @@ async function ensureJudgeChoreographyAccess({ judge, choreographyId }) {
     throw error;
   }
 
+  if (choreography.desistencia) {
+    const error = new Error("Cannot score a withdrawn choreography");
+    error.statusCode = 400;
+    throw error;
+  }
+
   return choreography;
 }
 

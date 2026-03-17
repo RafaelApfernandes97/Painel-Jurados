@@ -7,6 +7,7 @@ import EventsPage from "@legacy/pages/EventsPage";
 import JudgesPage from "@legacy/pages/JudgesPage";
 import LiveEvaluationPage from "@legacy/pages/LiveEvaluationPage";
 import LoginPage from "@legacy/pages/LoginPage";
+import BlocksPage from "@legacy/pages/BlocksPage";
 import OrderPage from "@legacy/pages/OrderPage";
 import ResultsPage from "@legacy/pages/ResultsPage";
 
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/events/:eventId/coreographies" element={<CoreographiesPage />} />
+          <Route path="/events/:eventId/blocks" element={<BlocksPage />} />
           <Route path="/events/:eventId/judges" element={<JudgesPage />} />
           <Route path="/events/:eventId/order" element={<OrderPage />} />
           <Route path="/events/:eventId/live" element={<LiveEvaluationPage />} />

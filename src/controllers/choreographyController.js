@@ -153,7 +153,8 @@ async function updateChoreography(req, res, next) {
       "escola",
       "nome_coreografia",
       "release",
-      "elenco"
+      "elenco",
+      "desistencia"
     ];
 
     updatableFields.forEach((field) => {
@@ -271,12 +272,179 @@ async function getCurrentChoreography(req, res, next) {
   }
 }
 
+async function importChoreographies(req, res, next) {
+  try {
+    const { eventId } = req.params;
+    const clientFilter = req.clientFilter || getClientFilter(req);
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      const error = new Error("items must be a non-empty array");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (items.length > 500) {
+      const error = new Error("Maximum 500 items per import");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    await ensureClientEvent(eventId, clientFilter.clientId);
+
+    const requiredFields = ["modalidade", "categoria", "subcategoria", "escola", "nome_coreografia"];
+    const errors = [];
+    const validated = [];
+
+    // Find the highest existing n_inscricao for this event to auto-generate
+    const lastChoreography = await Choreography.findOne({
+      eventId,
+      clientId: clientFilter.clientId
+    }).sort({ n_inscricao: -1 });
+
+    let nextNumber = 1;
+    if (lastChoreography) {
+      const parsed = parseInt(lastChoreography.n_inscricao, 10);
+      if (!isNaN(parsed)) {
+        nextNumber = parsed + 1;
+      }
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const row = i + 1;
+
+      const missing = requiredFields.filter((field) => {
+        const value = item[field];
+        return value === undefined || value === null || String(value).trim() === "";
+      });
+
+      if (missing.length > 0) {
+        errors.push({ row, message: `Campos obrigatorios ausentes: ${missing.join(", ")}` });
+        continue;
+      }
+
+      // Auto-generate n_inscricao if not provided
+      let nInscricao;
+      if (item.n_inscricao !== undefined && item.n_inscricao !== null && String(item.n_inscricao).trim() !== "") {
+        nInscricao = String(item.n_inscricao).trim();
+      } else {
+        nInscricao = String(nextNumber);
+        nextNumber++;
+      }
+
+      // Auto-generate ordem_apresentacao if not provided
+      const ordemValue = item.ordem_apresentacao !== undefined && item.ordem_apresentacao !== null && String(item.ordem_apresentacao).trim() !== ""
+        ? Number(item.ordem_apresentacao)
+        : i + 1;
+
+      if (!Number.isFinite(ordemValue)) {
+        errors.push({ row, message: "ordem_apresentacao deve ser numerico" });
+        continue;
+      }
+
+      validated.push({
+        clientId: clientFilter.clientId,
+        eventId,
+        n_inscricao: nInscricao,
+        modalidade: String(item.modalidade).trim(),
+        categoria: String(item.categoria).trim(),
+        subcategoria: String(item.subcategoria).trim(),
+        escola: String(item.escola).trim(),
+        nome_coreografia: String(item.nome_coreografia).trim(),
+        release: item.release ? String(item.release).trim() : "",
+        elenco: item.elenco ? String(item.elenco).trim() : "",
+        ordem_apresentacao: ordemValue
+      });
+    }
+
+    let created = [];
+    const insertErrors = [];
+
+    for (const item of validated) {
+      try {
+        const choreography = await Choreography.create(item);
+        created.push(choreography);
+      } catch (err) {
+        const n = item.n_inscricao;
+        if (err.code === 11000) {
+          insertErrors.push({ n_inscricao: n, message: `Inscricao #${n} ja existe neste evento` });
+        } else {
+          insertErrors.push({ n_inscricao: n, message: err.message });
+        }
+      }
+    }
+
+    res.status(200).json({
+      imported: created.length,
+      validationErrors: errors,
+      insertErrors,
+      total: items.length
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function withdrawChoreography(req, res, next) {
+  try {
+    const { eventId, choreographyId } = req.params;
+    const clientFilter = req.clientFilter || getClientFilter(req);
+
+    await ensureClientEvent(eventId, clientFilter.clientId);
+
+    const choreography = await loadChoreographyForEvent({
+      eventId,
+      choreographyId,
+      clientId: clientFilter.clientId
+    });
+
+    choreography.desistencia = true;
+    await choreography.save();
+
+    res.status(200).json({
+      message: "Choreography marked as withdrawn",
+      choreography
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function restoreChoreography(req, res, next) {
+  try {
+    const { eventId, choreographyId } = req.params;
+    const clientFilter = req.clientFilter || getClientFilter(req);
+
+    await ensureClientEvent(eventId, clientFilter.clientId);
+
+    const choreography = await loadChoreographyForEvent({
+      eventId,
+      choreographyId,
+      clientId: clientFilter.clientId
+    });
+
+    choreography.desistencia = false;
+    await choreography.save();
+
+    res.status(200).json({
+      message: "Choreography restored",
+      choreography
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   callChoreography,
   createChoreography,
+  importChoreographies,
   listChoreographies,
   updateChoreography,
   deleteChoreography,
   getCurrentChoreography,
-  returnChoreographyToQueue
+  returnChoreographyToQueue,
+  withdrawChoreography,
+  restoreChoreography
 };

@@ -3,6 +3,7 @@ import { cn } from "../lib/utils";
 
 const tabs = [
   { key: "coreographies", label: "Coreografias" },
+  { key: "blocks", label: "Blocos" },
   { key: "judges", label: "Jurados" },
   { key: "order", label: "Ordem" },
   { key: "live", label: "Ao vivo" },

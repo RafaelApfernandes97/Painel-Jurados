@@ -1,7 +1,7 @@
-import { Radio, RefreshCcw, Send } from "lucide-react";
+import { Ban, Radio, RefreshCcw, RotateCcw, Send } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { choreographiesApi, eventsApi, judgesApi, scoresApi } from "../api/client";
+import { blocksApi, choreographiesApi, eventsApi, judgesApi, scoresApi } from "../api/client";
 import EventTabs from "../components/EventTabs";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
@@ -25,6 +25,8 @@ export default function LiveEvaluationPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsItem, setDetailsItem] = useState(null);
   const [detailsScores, setDetailsScores] = useState(null);
+  const [blocks, setBlocks] = useState([]);
+  const [selectedBlockId, setSelectedBlockId] = useState("");
 
   useEffect(() => {
     loadData();
@@ -47,10 +49,11 @@ export default function LiveEvaluationPage() {
     setLoading(true);
 
     try {
-      const [events, choreographyList, judgesList] = await Promise.all([
+      const [events, choreographyList, judgesList, blockList] = await Promise.all([
         eventsApi.list(),
         choreographiesApi.list(eventId),
-        judgesApi.list(eventId)
+        judgesApi.list(eventId),
+        blocksApi.list(eventId)
       ]);
 
       setEventItem(events.find((event) => event._id === eventId) || null);
@@ -58,6 +61,7 @@ export default function LiveEvaluationPage() {
         choreographyList.sort((left, right) => left.ordem_apresentacao - right.ordem_apresentacao)
       );
       setJudges(judgesList);
+      setBlocks(blockList);
       await refreshCurrentChoreography();
     } finally {
       setLoading(false);
@@ -132,6 +136,28 @@ export default function LiveEvaluationPage() {
     }
   }
 
+  async function handleWithdraw(item) {
+    setCallingId(item._id);
+
+    try {
+      await eventsApi.withdrawChoreography(eventId, item._id);
+      await refreshChoreographies();
+    } finally {
+      setCallingId("");
+    }
+  }
+
+  async function handleRestore(item) {
+    setCallingId(item._id);
+
+    try {
+      await eventsApi.restoreChoreography(eventId, item._id);
+      await refreshChoreographies();
+    } finally {
+      setCallingId("");
+    }
+  }
+
   const statusSummary = useMemo(() => {
     if (!scoreStatus) {
       return { sent: 0, pending: judges.length };
@@ -143,11 +169,19 @@ export default function LiveEvaluationPage() {
     };
   }, [judges.length, scoreStatus]);
 
-  const { queueItems, presentedItems } = useMemo(() => {
-    const presented = choreographies.filter((item) => item.presentedAt);
-    const queue = choreographies.filter((item) => !item.presentedAt);
-    return { queueItems: queue, presentedItems: presented };
-  }, [choreographies]);
+  const blockMap = useMemo(() => {
+    const map = new Map();
+    blocks.forEach((b) => map.set(b._id, b.nome));
+    return map;
+  }, [blocks]);
+
+  const { queueItems, presentedItems, withdrawnItems } = useMemo(() => {
+    const matchesBlock = (item) => !selectedBlockId || item.blockId === selectedBlockId;
+    const withdrawn = choreographies.filter((item) => item.desistencia && matchesBlock(item));
+    const presented = choreographies.filter((item) => item.presentedAt && !item.desistencia && matchesBlock(item));
+    const queue = choreographies.filter((item) => !item.presentedAt && !item.desistencia && matchesBlock(item));
+    return { queueItems: queue, presentedItems: presented, withdrawnItems: withdrawn };
+  }, [choreographies, selectedBlockId]);
 
   if (loading) {
     return <LoadingState label="Conectando ao painel ao vivo..." />;
@@ -176,6 +210,35 @@ export default function LiveEvaluationPage() {
 
         <EventTabs eventId={eventId} />
 
+        {blocks.length > 0 && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-slate-600">Filtrar bloco:</span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                  !selectedBlockId ? "bg-slate-950 text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                }`}
+                onClick={() => setSelectedBlockId("")}
+              >
+                Todos
+              </button>
+              {blocks.map((block) => (
+                <button
+                  key={block._id}
+                  type="button"
+                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                    selectedBlockId === block._id ? "bg-slate-950 text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                  }`}
+                  onClick={() => setSelectedBlockId(block._id)}
+                >
+                  {block.nome}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           <Card>
             <div className="mb-5 flex items-center justify-between">
@@ -189,7 +252,7 @@ export default function LiveEvaluationPage() {
             </div>
 
             {queueItems.length ? (
-              <div className="space-y-3">
+              <div className="max-h-[26rem] space-y-3 overflow-y-auto pr-1">
                 {queueItems.map((item) => (
                   <div
                     key={item._id}
@@ -205,17 +268,33 @@ export default function LiveEvaluationPage() {
                       </p>
                       <p className="mt-1 text-sm text-slate-500">
                         #{item.n_inscricao} - {item.modalidade} - {item.escola}
+                        {item.blockId && blockMap.has(item.blockId) && (
+                          <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                            {blockMap.get(item.blockId)}
+                          </span>
+                        )}
                       </p>
                     </button>
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => handleCall(item)}
-                      disabled={callingId === item._id}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      {callingId === item._id ? "Chamando..." : "Chamar coreografia"}
-                    </button>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => handleCall(item)}
+                        disabled={callingId === item._id}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {callingId === item._id ? "Chamando..." : "Chamar coreografia"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary text-red-600 hover:bg-red-50"
+                        onClick={() => handleWithdraw(item)}
+                        disabled={callingId === item._id}
+                      >
+                        <Ban className="mr-2 h-4 w-4" />
+                        Desistencia
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -239,7 +318,7 @@ export default function LiveEvaluationPage() {
           </div>
 
           {presentedItems.length ? (
-            <div className="space-y-3">
+            <div className="max-h-[26rem] space-y-3 overflow-y-auto pr-1">
               {presentedItems.map((item) => (
                 <div
                   key={item._id}
@@ -287,6 +366,51 @@ export default function LiveEvaluationPage() {
           )}
           </Card>
         </div>
+
+        {/* Withdrawn section */}
+        {withdrawnItems.length > 0 && (
+          <Card>
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-red-700">Desistencias</h3>
+                <p className="text-sm text-slate-500">Inscricoes que desistiram e nao serao avaliadas.</p>
+              </div>
+              <div className="rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-600">
+                {withdrawnItems.length} desistencias
+              </div>
+            </div>
+            <div className="space-y-3">
+              {withdrawnItems.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex flex-col gap-3 rounded-2xl border border-red-100 bg-red-50/50 p-4 lg:flex-row lg:items-center lg:justify-between"
+                >
+                  <button
+                    type="button"
+                    className="text-left"
+                    onClick={() => openDetails(item)}
+                  >
+                    <p className="font-bold text-red-700 line-through">
+                      {item.ordem_apresentacao}. {item.nome_coreografia}
+                    </p>
+                    <p className="mt-1 text-sm text-red-400">
+                      #{item.n_inscricao} - {item.modalidade} - {item.escola}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => handleRestore(item)}
+                    disabled={callingId === item._id}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Restaurar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <div className="space-y-6">
           <Card>

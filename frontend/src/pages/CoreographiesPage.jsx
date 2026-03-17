@@ -1,7 +1,8 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { GripVertical, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { choreographiesApi, eventsApi } from "../api/client";
+import ImportChoreographiesModal from "../components/ImportChoreographiesModal";
 import EventTabs from "../components/EventTabs";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
@@ -31,6 +32,8 @@ export default function CoreographiesPage() {
   const [editingItem, setEditingItem] = useState(null);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadData();
@@ -107,6 +110,23 @@ export default function CoreographiesPage() {
     await loadData();
   }
 
+  const sortedItems = useMemo(
+    () => items.slice().sort((a, b) => a.ordem_apresentacao - b.ordem_apresentacao),
+    [items]
+  );
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return sortedItems;
+    const q = searchQuery.toLowerCase().trim();
+    return sortedItems.filter((item) =>
+      String(item.n_inscricao).toLowerCase().includes(q) ||
+      (item.nome_coreografia || "").toLowerCase().includes(q) ||
+      (item.escola || "").toLowerCase().includes(q) ||
+      (item.modalidade || "").toLowerCase().includes(q) ||
+      (item.categoria || "").toLowerCase().includes(q)
+    );
+  }, [sortedItems, searchQuery]);
+
   if (loading) {
     return <LoadingState label="Carregando coreografias..." />;
   }
@@ -118,61 +138,121 @@ export default function CoreographiesPage() {
         title={eventItem ? `${eventItem.nome} - Coreografias` : "Coreografias"}
         description="Gerencie a ficha tecnica de cada inscricao dentro do evento."
         actions={
-          <button type="button" className="btn-primary" onClick={openCreateModal}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova coreografia
-          </button>
+          <div className="flex gap-2">
+            <button type="button" className="btn-secondary" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Importar planilha
+            </button>
+            <button type="button" className="btn-primary" onClick={openCreateModal}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova coreografia
+            </button>
+          </div>
         }
       />
 
       <EventTabs eventId={eventId} />
 
       {items.length ? (
-        <Card className="overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-100 text-sm">
-              <thead className="bg-slate-50/80 text-left text-slate-500">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Inscricao</th>
-                  <th className="px-6 py-4 font-semibold">Coreografia</th>
-                  <th className="px-6 py-4 font-semibold">Categoria</th>
-                  <th className="px-6 py-4 font-semibold">Ordem</th>
-                  <th className="px-6 py-4 text-right font-semibold">Acoes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {items
-                  .slice()
-                  .sort((left, right) => left.ordem_apresentacao - right.ordem_apresentacao)
-                  .map((item) => (
-                    <tr key={item._id}>
-                      <td className="px-6 py-4 font-semibold text-slate-900">{item.n_inscricao}</td>
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-slate-900">{item.nome_coreografia}</p>
-                        <p className="mt-1 text-slate-500">{item.escola}</p>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        {item.modalidade} - {item.categoria} - {item.subcategoria}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">{item.ordem_apresentacao}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button type="button" className="btn-secondary" onClick={() => openEditModal(item)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
-                          </button>
-                          <button type="button" className="btn-danger" onClick={() => handleDelete(item._id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+        <>
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-10 text-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              placeholder="Buscar por numero, nome, escola, modalidade, categoria..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-600"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-        </Card>
+
+          {/* Summary */}
+          <div className="flex items-center justify-between text-sm text-slate-500">
+            <span>
+              {filteredItems.length === items.length
+                ? `${items.length} coreografias`
+                : `${filteredItems.length} de ${items.length} coreografias`}
+            </span>
+            <span className="text-xs">Ordenadas por ordem de apresentacao</span>
+          </div>
+
+          {/* Card list */}
+          <div className="space-y-2">
+            {filteredItems.map((item) => (
+              <div
+                key={item._id}
+                className={`group flex items-stretch rounded-2xl border bg-white transition hover:shadow-sm ${
+                  item.desistencia ? "border-red-200 bg-red-50/30" : "border-slate-200"
+                }`}
+              >
+                {/* Order indicator */}
+                <div className="flex w-16 shrink-0 flex-col items-center justify-center rounded-l-2xl border-r border-slate-100 bg-slate-50">
+                  <GripVertical className="mb-0.5 h-3.5 w-3.5 text-slate-300" />
+                  <span className="text-lg font-extrabold leading-none text-slate-900">
+                    {item.ordem_apresentacao}
+                  </span>
+                  <span className="mt-0.5 text-[10px] font-semibold text-slate-400">ordem</span>
+                </div>
+
+                {/* Content */}
+                <div className="flex min-w-0 flex-1 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-lg bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-700">
+                        #{String(item.n_inscricao).padStart(2, "0")}
+                      </span>
+                      <span className={`text-sm font-bold ${item.desistencia ? "text-red-600 line-through" : "text-slate-900"}`}>
+                        {item.nome_coreografia}
+                      </span>
+                      {item.desistencia && (
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+                          Desistencia
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
+                      <span>{item.escola}</span>
+                      <span className="text-slate-300">|</span>
+                      <span>{item.modalidade}</span>
+                      <span className="text-slate-300">|</span>
+                      <span>{item.categoria} - {item.subcategoria}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 gap-1.5">
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50 hover:text-sky-600"
+                      onClick={() => openEditModal(item)}
+                      title="Editar"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => handleDelete(item._id)}
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       ) : (
         <EmptyState
           title="Nenhuma coreografia cadastrada"
@@ -290,6 +370,16 @@ export default function CoreographiesPage() {
           </div>
         </form>
       </Modal>
+
+      <ImportChoreographiesModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={async (items) => {
+          const result = await choreographiesApi.import(eventId, items);
+          await loadData();
+          return result;
+        }}
+      />
     </div>
   );
 }

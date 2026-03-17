@@ -46,7 +46,9 @@ function buildCurrentChoreographyPayload(choreography) {
     nome_coreografia: choreography.nome_coreografia,
     release: choreography.release,
     elenco: choreography.elenco,
-    ordem_apresentacao: choreography.ordem_apresentacao
+    ordem_apresentacao: choreography.ordem_apresentacao,
+    desistencia: choreography.desistencia || false,
+    blockId: choreography.blockId || null
   };
 }
 

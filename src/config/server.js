@@ -1,4 +1,5 @@
 const express = require("express");
+const helmet = require("helmet");
 const apiRoutes = require("../routes");
 const { applyCors } = require("./cors");
 const errorHandler = require("../middlewares/errorHandler");
@@ -7,9 +8,10 @@ const logger = require("../services/logger");
 function createServer() {
   const app = express();
 
+  app.use(helmet());
   app.use(applyCors);
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
   app.use((req, res, next) => {
     logger.info(`${req.method} ${req.originalUrl}`);

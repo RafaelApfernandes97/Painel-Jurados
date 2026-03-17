@@ -1,3 +1,4 @@
+const Block = require("../models/Block");
 const Choreography = require("../models/Choreography");
 const Event = require("../models/Event");
 const Judge = require("../models/Judge");
@@ -118,6 +119,11 @@ async function getJudgeAccess(req, res, next) {
       ])
     );
 
+    const blocks = await Block.find({
+      eventId: judge.eventId._id,
+      clientId: judge.clientId
+    }).sort({ ordem: 1 });
+
     res.status(200).json({
       judge: {
         id: judge._id,
@@ -137,6 +143,11 @@ async function getJudgeAccess(req, res, next) {
         choreography: buildCurrentChoreographyPayload(item),
         presentedAt: item.presentedAt,
         score: scoreMap.get(item._id.toString()) || null
+      })),
+      blocks: blocks.map((block) => ({
+        id: block._id,
+        nome: block.nome,
+        ordem: block.ordem
       })),
       currentScoreSubmitted: Boolean(currentScore),
       currentScore: currentScore

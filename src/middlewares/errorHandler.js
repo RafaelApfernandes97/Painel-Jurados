@@ -21,8 +21,10 @@ function errorHandler(error, req, res, next) {
     });
   }
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   res.status(error.statusCode || 500).json({
-    message: error.message || "Internal server error"
+    message: isProduction ? "Internal server error" : (error.message || "Internal server error")
   });
 }
 

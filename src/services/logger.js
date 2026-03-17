@@ -15,10 +15,13 @@ function normalizeMeta(meta) {
   }
 
   if (meta instanceof Error) {
-    return {
-      message: meta.message,
-      stack: meta.stack
-    };
+    const normalized = { message: meta.message };
+
+    if (process.env.NODE_ENV !== "production") {
+      normalized.stack = meta.stack;
+    }
+
+    return normalized;
   }
 
   return meta;
