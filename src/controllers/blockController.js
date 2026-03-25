@@ -5,7 +5,7 @@ const { getClientFilter } = require("../services/clientFilterService");
 async function createBlock(req, res, next) {
   try {
     const { eventId } = req.params;
-    const { nome, ordem } = req.body;
+    const { nome, ordem, palco } = req.body;
     const clientFilter = req.clientFilter || getClientFilter(req);
 
     if (!nome || ordem === undefined) {
@@ -18,7 +18,8 @@ async function createBlock(req, res, next) {
       clientId: clientFilter.clientId,
       eventId,
       nome,
-      ordem: Number(ordem)
+      ordem: Number(ordem),
+      palco: palco || ""
     });
 
     res.status(201).json(block);
@@ -62,6 +63,10 @@ async function updateBlock(req, res, next) {
 
     if (req.body.ordem !== undefined) {
       block.ordem = Number(req.body.ordem);
+    }
+
+    if (req.body.palco !== undefined) {
+      block.palco = req.body.palco;
     }
 
     await block.save();

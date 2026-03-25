@@ -2,7 +2,7 @@ import { Medal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { eventsApi } from "../api/client";
-import EventTabs from "../components/EventTabs";
+
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
@@ -47,7 +47,7 @@ export default function ResultsPage() {
         description="Ranking consolidado por media das notas enviadas pelos jurados."
       />
 
-      <EventTabs eventId={eventId} />
+
 
       {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 

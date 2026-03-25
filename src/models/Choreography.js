@@ -62,6 +62,39 @@ const choreographySchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    quantidade_bailarinos: {
+      type: Number,
+      default: 0
+    },
+    tempo_apresentacao: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    musica: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    coreografo: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    palco: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    horario_previsto: {
+      type: Date,
+      default: null
+    },
+    status_cronograma: {
+      type: String,
+      enum: ["aguardando", "confirmado", "primeira_chamada", "no_palco", "apresentado", "desistencia"],
+      default: "aguardando"
+    },
     desistencia: {
       type: Boolean,
       default: false

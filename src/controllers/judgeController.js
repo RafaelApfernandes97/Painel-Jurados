@@ -37,7 +37,7 @@ function parseActiveValue(value) {
 async function createJudge(req, res, next) {
   try {
     const { eventId } = req.params;
-    const { nome, telefone, ativo } = req.body;
+    const { nome, telefone, ativo, palco } = req.body;
     const clientFilter = req.clientFilter || getClientFilter(req);
 
     if (!nome || !telefone) {
@@ -55,7 +55,8 @@ async function createJudge(req, res, next) {
       nome,
       telefone,
       token_acesso: tokenAcesso,
-      ativo: parseActiveValue(ativo)
+      ativo: parseActiveValue(ativo),
+      palco: palco || ""
     });
 
     res.status(201).json({

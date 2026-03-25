@@ -65,6 +65,8 @@ async function createChoreography(req, res, next) {
     await ensureClientEvent(eventId, clientFilter.clientId);
     await ensureUniqueRegistration(eventId, String(n_inscricao).trim(), clientFilter.clientId);
 
+    const { quantidade_bailarinos, tempo_apresentacao, musica, coreografo, palco } = req.body;
+
     const choreography = await Choreography.create({
       clientId: clientFilter.clientId,
       eventId,
@@ -76,7 +78,12 @@ async function createChoreography(req, res, next) {
       nome_coreografia,
       release,
       elenco,
-      ordem_apresentacao: Number(ordem_apresentacao)
+      ordem_apresentacao: Number(ordem_apresentacao),
+      quantidade_bailarinos: quantidade_bailarinos || 0,
+      tempo_apresentacao: tempo_apresentacao || "",
+      musica: musica || "",
+      coreografo: coreografo || "",
+      palco: palco || ""
     });
 
     res.status(201).json(choreography);
@@ -154,7 +161,14 @@ async function updateChoreography(req, res, next) {
       "nome_coreografia",
       "release",
       "elenco",
-      "desistencia"
+      "desistencia",
+      "quantidade_bailarinos",
+      "tempo_apresentacao",
+      "musica",
+      "coreografo",
+      "palco",
+      "horario_previsto",
+      "status_cronograma"
     ];
 
     updatableFields.forEach((field) => {

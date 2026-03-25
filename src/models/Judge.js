@@ -33,6 +33,11 @@ const judgeSchema = new mongoose.Schema(
     ativo: {
       type: Boolean,
       default: true
+    },
+    palco: {
+      type: String,
+      default: "",
+      trim: true
     }
   },
   {

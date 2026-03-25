@@ -2,7 +2,7 @@ import { Filter, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { blocksApi, choreographiesApi, eventsApi } from "../api/client";
-import EventTabs from "../components/EventTabs";
+
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
@@ -207,7 +207,6 @@ export default function BlocksPage() {
         }
       />
 
-      <EventTabs eventId={eventId} />
 
       {/* Unassigned summary */}
       {unassigned.length > 0 && (

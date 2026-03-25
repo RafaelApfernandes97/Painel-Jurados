@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { choreographiesApi, eventsApi } from "../api/client";
 import ImportChoreographiesModal from "../components/ImportChoreographiesModal";
-import EventTabs from "../components/EventTabs";
+
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
@@ -151,7 +151,6 @@ export default function CoreographiesPage() {
         }
       />
 
-      <EventTabs eventId={eventId} />
 
       {items.length ? (
         <>

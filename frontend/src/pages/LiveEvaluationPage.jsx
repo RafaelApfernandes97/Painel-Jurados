@@ -1,14 +1,14 @@
-import { Ban, Radio, RefreshCcw, RotateCcw, Send } from "lucide-react";
+import { Ban, Radio, RotateCcw, Send } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { blocksApi, choreographiesApi, eventsApi, judgesApi, scoresApi } from "../api/client";
-import EventTabs from "../components/EventTabs";
+
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import Modal from "../components/ui/Modal";
 import PageHeader from "../components/ui/PageHeader";
-import StatusPill from "../components/ui/StatusPill";
+
 import { formatDate } from "../lib/utils";
 
 export default function LiveEvaluationPage() {
@@ -20,7 +20,6 @@ export default function LiveEvaluationPage() {
   const [judges, setJudges] = useState([]);
   const [currentChoreography, setCurrentChoreography] = useState(null);
   const [scoreStatus, setScoreStatus] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsItem, setDetailsItem] = useState(null);
@@ -36,7 +35,10 @@ export default function LiveEvaluationPage() {
     let intervalId;
 
     async function poll() {
-      await refreshCurrentChoreography();
+      await Promise.all([
+        refreshCurrentChoreography(),
+        refreshChoreographies()
+      ]);
     }
 
     poll();
@@ -76,7 +78,6 @@ export default function LiveEvaluationPage() {
   }
 
   async function refreshCurrentChoreography() {
-    setRefreshing(true);
     try {
       const response = await eventsApi.getCurrentChoreography(eventId);
       setCurrentChoreography(response.currentChoreography);
@@ -87,8 +88,8 @@ export default function LiveEvaluationPage() {
       } else {
         setScoreStatus(null);
       }
-    } finally {
-      setRefreshing(false);
+    } catch {
+      // silently ignore polling errors
     }
   }
 
@@ -194,21 +195,8 @@ export default function LiveEvaluationPage() {
           eyebrow="Evento"
           title={eventItem ? `${eventItem.nome} - Avaliacao ao vivo` : "Avaliacao ao vivo"}
           description="Chame a coreografia atual e acompanhe em tempo real quem ja enviou nota."
-          actions={
-            <div className="flex items-center gap-3">
-              <StatusPill
-                label={refreshing ? "Atualizando" : "Sincronizado"}
-                tone={refreshing ? "pendente" : "ativo"}
-              />
-              <button type="button" className="btn-secondary" onClick={loadData}>
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                Atualizar
-              </button>
-            </div>
-          }
         />
 
-        <EventTabs eventId={eventId} />
 
         {blocks.length > 0 && (
           <div className="flex items-center gap-3">
@@ -472,10 +460,15 @@ export default function LiveEvaluationPage() {
                           : "Aguardando envio"}
                       </p>
                     </div>
-                    <StatusPill
-                      label={judge.enviado ? "Enviado" : "Pendente"}
-                      tone={judge.enviado ? "enviado" : "pendente"}
-                    />
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        judge.enviado
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {judge.enviado ? "Enviado" : "Pendente"}
+                    </span>
                   </div>
                 ))}
               </div>

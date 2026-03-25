@@ -6,5 +6,7 @@ dist
 .vscode
 .env
 .env.*
+!.env.example
 npm-debug.log
 yarn-error.log
+inscricoes.xlsx

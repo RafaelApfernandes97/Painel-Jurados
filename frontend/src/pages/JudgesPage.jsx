@@ -2,7 +2,7 @@ import { Copy, Link2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { eventsApi, judgesApi } from "../api/client";
-import EventTabs from "../components/EventTabs";
+
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
@@ -75,7 +75,7 @@ export default function JudgesPage() {
         description="Cadastre jurados sem senha. Cada um recebe um link magico unico para acesso."
       />
 
-      <EventTabs eventId={eventId} />
+
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Card>

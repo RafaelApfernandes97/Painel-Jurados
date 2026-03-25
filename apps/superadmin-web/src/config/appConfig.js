@@ -5,5 +5,5 @@ function normalizeUrl(url, fallback) {
 }
 
 export const APP_CONFIG = {
-  apiUrl: normalizeUrl(import.meta.env.VITE_API_URL, "http://localhost:3000")
+  apiUrl: normalizeUrl(import.meta.env.VITE_API_URL, "https://observation-enlargement-poems-meanwhile.trycloudflare.com ")
 };

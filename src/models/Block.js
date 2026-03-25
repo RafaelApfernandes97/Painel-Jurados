@@ -22,6 +22,11 @@ const blockSchema = new mongoose.Schema(
     ordem: {
       type: Number,
       required: true
+    },
+    palco: {
+      type: String,
+      default: "",
+      trim: true
     }
   },
   {

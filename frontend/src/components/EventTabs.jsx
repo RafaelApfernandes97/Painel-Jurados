@@ -2,12 +2,16 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "../lib/utils";
 
 const tabs = [
+  { key: "registrations", label: "Inscricoes" },
+  { key: "financial", label: "Financeiro" },
   { key: "coreographies", label: "Coreografias" },
   { key: "blocks", label: "Blocos" },
   { key: "judges", label: "Jurados" },
   { key: "order", label: "Ordem" },
+  { key: "schedule", label: "Cronograma" },
   { key: "live", label: "Ao vivo" },
-  { key: "results", label: "Resultados" }
+  { key: "results", label: "Resultados" },
+  { key: "certificates", label: "Certificados" }
 ];
 
 export default function EventTabs({ eventId }) {

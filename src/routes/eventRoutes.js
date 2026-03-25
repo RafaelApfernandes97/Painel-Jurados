@@ -3,7 +3,8 @@ const {
   createEvent,
   deleteEvent,
   listEvents,
-  updateEvent
+  updateEvent,
+  getEventDashboard
 } = require("../controllers/eventController");
 const {
   callChoreography,
@@ -38,6 +39,7 @@ router.post("/events", createEvent);
 router.get("/events", listEvents);
 router.put("/events/:id", updateEvent);
 router.delete("/events/:id", deleteEvent);
+router.get("/events/:eventId/dashboard", getEventDashboard);
 
 router.post("/events/:eventId/choreographies", createChoreography);
 router.post("/events/:eventId/choreographies/import", importChoreographies);

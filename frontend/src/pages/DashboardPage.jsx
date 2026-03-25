@@ -1,7 +1,15 @@
-import { CalendarClock, CheckCircle2, Users2 } from "lucide-react";
+import {
+  CalendarClock,
+  CheckCircle2,
+  DollarSign,
+  GalleryVerticalEnd,
+  School,
+  Users,
+  Users2
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { eventsApi, judgesApi } from "../api/client";
+import { eventsApi, judgesApi, registrationsApi } from "../api/client";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
@@ -12,7 +20,15 @@ import { eventStatusLabel, formatDate } from "../lib/utils";
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
-  const [judgesCount, setJudgesCount] = useState(0);
+  const [metrics, setMetrics] = useState({
+    judgesCount: 0,
+    totalBailarinos: 0,
+    totalEscolas: 0,
+    totalCoreografias: 0,
+    totalInscricoes: 0,
+    receitaTotal: 0,
+    totalPago: 0
+  });
 
   useEffect(() => {
     let active = true;
@@ -23,38 +39,70 @@ export default function DashboardPage() {
       try {
         const eventList = await eventsApi.list();
 
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setEvents(eventList);
 
-        const judgeLists = await Promise.all(eventList.map((event) => judgesApi.list(event._id)));
+        // Carregar dados de cada evento em paralelo
+        const results = await Promise.all(
+          eventList.map(async (event) => {
+            try {
+              const [judges, regs] = await Promise.all([
+                judgesApi.list(event._id),
+                registrationsApi.list(event._id)
+              ]);
+              return { judges, regs };
+            } catch {
+              return { judges: [], regs: [] };
+            }
+          })
+        );
 
-        if (!active) {
-          return;
+        if (!active) return;
+
+        let judgesCount = 0;
+        let totalBailarinos = 0;
+        const escolasSet = new Set();
+        let totalCoreografias = 0;
+        let totalInscricoes = 0;
+        let receitaTotal = 0;
+        let totalPago = 0;
+
+        for (const { judges, regs } of results) {
+          judgesCount += judges.length;
+          totalInscricoes += regs.length;
+
+          for (const reg of regs) {
+            escolasSet.add(reg.nome_escola);
+            receitaTotal += reg.valor_total || 0;
+            totalPago += reg.valor_pago || 0;
+
+            for (const c of reg.coreografias || []) {
+              totalBailarinos += c.quantidade_bailarinos || 0;
+              totalCoreografias++;
+            }
+          }
         }
 
-        setJudgesCount(judgeLists.reduce((total, list) => total + list.length, 0));
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
+        setMetrics({
+          judgesCount,
+          totalBailarinos,
+          totalEscolas: escolasSet.size,
+          totalCoreografias,
+          totalInscricoes,
+          receitaTotal,
+          totalPago
+        });
+      } catch {
+        if (!active) return;
         setEvents([]);
-        setJudgesCount(0);
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     }
 
     loadDashboard();
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
   const activeEvents = events.filter((event) => event.status === "ativo").length;
@@ -68,15 +116,36 @@ export default function DashboardPage() {
       <PageHeader
         eyebrow="Dashboard"
         title="Visao geral da operacao"
-        description="Acompanhe rapidamente a estrutura do cliente, o volume de eventos e o total de jurados em uso."
+        description="Acompanhe rapidamente eventos, inscricoes, bailarinos e financeiro."
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* ── Main metrics ── */}
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
         <MetricCard icon={CalendarClock} label="Total de eventos" value={events.length} />
         <MetricCard icon={CheckCircle2} label="Eventos ativos" value={activeEvents} />
-        <MetricCard icon={Users2} label="Jurados cadastrados" value={judgesCount} />
+        <MetricCard icon={Users2} label="Jurados cadastrados" value={metrics.judgesCount} />
+        <MetricCard icon={GalleryVerticalEnd} label="Coreografias inscritas" value={metrics.totalCoreografias} />
       </div>
 
+      {/* ── Extended metrics ── */}
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <MetricCard icon={Users} label="Total de bailarinos" value={metrics.totalBailarinos} />
+        <MetricCard icon={School} label="Escolas / Grupos" value={metrics.totalEscolas} />
+        <MetricCard
+          icon={DollarSign}
+          label="Receita total"
+          value={`R$ ${metrics.receitaTotal.toFixed(2)}`}
+          isText
+        />
+        <MetricCard
+          icon={DollarSign}
+          label="Total recebido"
+          value={`R$ ${metrics.totalPago.toFixed(2)}`}
+          isText
+        />
+      </div>
+
+      {/* ── Recent events ── */}
       <Card>
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
@@ -103,7 +172,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <StatusPill label={eventStatusLabel(event.status)} tone={event.status} />
-                  <Link to={`/events/${event._id}/live`} className="btn-primary">
+                  <Link to={`/events/${event._id}/registrations`} className="btn-primary">
                     Abrir evento
                   </Link>
                 </div>
@@ -113,7 +182,7 @@ export default function DashboardPage() {
         ) : (
           <EmptyState
             title="Nenhum evento cadastrado"
-            description="Crie seu primeiro evento para começar a organizar coreografias, jurados e avaliacoes."
+            description="Crie seu primeiro evento para comecar a organizar coreografias, jurados e avaliacoes."
             action={
               <Link to="/events" className="btn-primary">
                 Ir para eventos
@@ -126,13 +195,15 @@ export default function DashboardPage() {
   );
 }
 
-function MetricCard({ icon: Icon, label, value }) {
+function MetricCard({ icon: Icon, label, value, isText }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-500">{label}</p>
-          <p className="mt-3 text-4xl font-extrabold tracking-tight text-slate-950">{value}</p>
+          <p className={`mt-3 font-extrabold tracking-tight text-slate-950 ${isText ? "text-2xl" : "text-4xl"}`}>
+            {value}
+          </p>
         </div>
         <div className="rounded-2xl bg-brand-50 p-3 text-brand-600">
           <Icon className="h-5 w-5" />
