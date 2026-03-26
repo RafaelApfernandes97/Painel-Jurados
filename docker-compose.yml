@@ -5,15 +5,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${API_PORT:-3000}:3000"
-    environment:
-      - PORT=3000
-      - NODE_ENV=production
-      - MONGO_URI=${MONGO_URI}
-      - JWT_SECRET=${JWT_SECRET}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
-      - JURY_BASE_URL=${JURY_BASE_URL}
-      - SUPERADMIN_EMAIL=${SUPERADMIN_EMAIL}
-      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+    env_file:
+      - apps/api/.env
     restart: unless-stopped
 
   client-web:
@@ -22,10 +15,8 @@ services:
       dockerfile: apps/client-web/Dockerfile
     ports:
       - "${CLIENT_PORT:-8081}:80"
-    environment:
-      - VITE_API_URL=${VITE_CLIENT_API_URL}
-      - VITE_SOCKET_URL=${VITE_CLIENT_SOCKET_URL}
-      - VITE_JURY_URL=${VITE_CLIENT_JURY_URL}
+    env_file:
+      - apps/client-web/.env
     restart: unless-stopped
 
   jury-web:
@@ -34,9 +25,8 @@ services:
       dockerfile: apps/jury-web/Dockerfile
     ports:
       - "${JURY_PORT:-8082}:80"
-    environment:
-      - VITE_API_URL=${VITE_JURY_API_URL}
-      - VITE_SOCKET_URL=${VITE_JURY_SOCKET_URL}
+    env_file:
+      - apps/jury-web/.env
     restart: unless-stopped
 
   superadmin-web:
@@ -45,6 +35,6 @@ services:
       dockerfile: apps/superadmin-web/Dockerfile
     ports:
       - "${SUPERADMIN_PORT:-8083}:80"
-    environment:
-      - VITE_API_URL=${VITE_SUPERADMIN_API_URL}
+    env_file:
+      - apps/superadmin-web/.env
     restart: unless-stopped
