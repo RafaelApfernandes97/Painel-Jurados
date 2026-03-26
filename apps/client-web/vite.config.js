@@ -10,6 +10,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@legacy": path.resolve(__dirname, "../../frontend/src"),
+      "react": path.resolve(__dirname, "node_modules/react"),
+      "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
+      "react-router-dom": path.resolve(__dirname, "node_modules/react-router-dom"),
       "lucide-react": path.resolve(__dirname, "node_modules/lucide-react"),
       "axios": path.resolve(__dirname, "node_modules/axios"),
       "socket.io-client": path.resolve(__dirname, "node_modules/socket.io-client"),
